@@ -20,7 +20,8 @@ Version: **0.1.0 preview**, Windows desktop application.
 - Real MSS capture of a synthetic scrolling desktop surface stitched successfully on this machine at 150% display scaling.
 - Clipboard image transfer, PNG save, MP4 encoding and decoded dimensions passed; 2.2-second test produced 22 frames at 10 FPS.
 - Native app main window and preference controls inspected through desktop UI. Alt+C and Alt+A conflict with existing software on this machine; remaining default keys registered in the first single-instance run.
-- GitHub private repository created. Final build and remote sync outcome is recorded in DEVLOG.
+- Packaged EXE main window launched and inspected; desktop shortcut targets the D: build.
+- GitHub private repository created and source uploaded to main. CI is a documentation template only because current credentials lack workflow scope.
 
 ## Limitations / next work
 

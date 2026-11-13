@@ -4,6 +4,8 @@ A local-first Windows capture studio: screenshots, scrolling captures, delayed c
 
 **状态 / Status: v0.1.0 preview.** 已有可运行桌面程序，不是仅界面原型。滚动截图为手动滚动、自动拼接，暂不自动驱动网页滚动。
 
+![ScreenCut capture studio](docs/preview.png)
+
 ## 使用 / Usage
 
 双击桌面 **ScreenCut**，或运行 `dist/ScreenCut/ScreenCut.exe`。关闭主窗口后继续在系统托盘运行；右键托盘 → 退出，才会完全退出。

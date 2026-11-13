@@ -71,6 +71,7 @@ class Selector(QWidget):
     def __init__(self, screen, text):
         super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
         self.screen_ref = screen
+        self.setWindowTitle("ScreenCut — Capture")
         self.background = screen.grabWindow(0)
         self.text = text
         self.start = self.end = None

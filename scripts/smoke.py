@@ -5,10 +5,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import cv2
 import numpy as np
-from PySide6.QtCore import QTimer, Qt
+from PySide6.QtCore import QTimer, Qt, QPoint
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel
 from PySide6.QtGui import QPixmap
-from screencut.app import MainWindow, STYLE, as_image, capture
+from screencut.app import MainWindow, Selector, STYLE, as_image, capture
 from screencut.native import monitor_rect
 from screencut.i18n import LANGUAGES
 from screencut.recorder import Recorder
@@ -39,6 +40,17 @@ assert QApplication.clipboard().image().size() == window.latest.size()
 window.save_latest()
 assert list(out.glob("ScreenCut_*.png"))
 window.hide()
+selection = Selector(QApplication.primaryScreen(), "ScreenCut selection test")
+selected = []
+selection.selected.connect(selected.append)
+selection.show()
+app.processEvents()
+QTest.mousePress(selection, Qt.MouseButton.LeftButton, pos=QPoint(100, 100))
+QTest.mouseMove(selection, QPoint(300, 250))
+QTest.mouseRelease(selection, Qt.MouseButton.LeftButton, pos=QPoint(300, 250))
+assert selected and selected[0]["width"] >= 200
+selection.hide()
+selection.deleteLater()
 fixture = QLabel()
 fixture.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
 fixture.setGeometry(150, 150, 500, 600)
