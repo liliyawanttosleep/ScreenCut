@@ -2,6 +2,7 @@ import ctypes
 import logging
 import sys
 import time
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -19,14 +20,14 @@ from .native import Hotkeys, modifiers_down, paste, user32, monitor_rect
 from .recorder import Recorder
 
 STYLE = """
-QWidget {font-family: 'Microsoft YaHei UI'; font-size: 14px; color: #24334b;}
+QWidget {font-family: 'Microsoft YaHei UI'; font-size: 13px; color: #24334b;}
 QMainWindow, QTabWidget::pane {background: #f5f7fb;}
 QTabWidget::pane {border: 0;}
 QTabBar::tab {background: transparent; padding: 12px 24px; margin: 0 8px 12px 0; color: #718097;}
 QTabBar::tab:selected {background: #e5ebff; color: #455ad5; border-radius: 10px;}
 QFrame#card {background: white; border: 1px solid #e5eaf2; border-radius: 16px;}
 QLabel#muted {color: #738098;}
-QLabel#title {font-size: 29px; font-weight: 650;}
+QLabel#title {font-size: 28px; font-weight: 650; letter-spacing: 1px;}
 QPushButton {background: #fff; border: 1px solid #dce3ee; border-radius: 9px; padding: 10px 16px;}
 QPushButton:hover {background: #eef2ff; border-color: #b5c1fa;}
 QPushButton#primary {background: #5367e8; color: white; border: 0; font-weight: 600;}
@@ -63,6 +64,33 @@ def app_icon():
         p.drawLine(a,b,c,d)
     p.end()
     return QIcon(pixmap)
+
+def line_icon(kind):
+    pix = QPixmap(24, 24)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    p.setPen(QPen(QColor("#ffffff"), 1.8))
+    if kind == "mic":
+        p.drawRoundedRect(9, 3, 6, 12, 3, 3)
+        p.drawArc(6, 7, 12, 12, 180*16, 180*16)
+        p.drawLine(12, 19, 12, 22)
+        p.drawLine(8, 22, 16, 22)
+    elif kind == "region":
+        p.drawRect(4, 5, 16, 14)
+        p.drawLine(12, 2, 12, 8)
+        p.drawLine(1, 12, 7, 12)
+    elif kind == "start":
+        p.setBrush(QColor("#ffffff"))
+        from PySide6.QtGui import QPolygon
+        from PySide6.QtCore import QPoint
+        p.drawPolygon(QPolygon([QPoint(8,4), QPoint(20,12), QPoint(8,20)]))
+    else:
+        p.setBrush(QColor("#ff687b"))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawRoundedRect(5,5,14,14,3,3)
+    p.end()
+    return QIcon(pix)
 
 class Selector(QWidget):
     selected = Signal(object)
@@ -163,7 +191,7 @@ class MainWindow(QMainWindow):
         self.stitcher = None
         self.quitting = False
         self.scroll_timer = QTimer(self)
-        self.scroll_timer.setInterval(500)
+        self.scroll_timer.setInterval(80)
         self.scroll_timer.timeout.connect(self.scroll_tick)
         self.delay_timer = QTimer(self)
         self.delay_timer.setInterval(1000)
@@ -173,8 +201,10 @@ class MainWindow(QMainWindow):
         self.key_status = self.hotkeys.register(self.settings["hotkeys"])
         self.setWindowTitle("ScreenCut")
         self.setWindowIcon(app_icon())
-        self.resize(1080, 860)
+        self.resize(1000, 790)
         self.build_ui()
+        self.apply_theme()
+        QApplication.styleHints().colorSchemeChanged.connect(lambda *_: self.apply_theme())
         self.tray = QSystemTrayIcon(app_icon(), self)
         self.tray.setToolTip("ScreenCut")
         self.tray.activated.connect(lambda reason: self.showNormal() if reason == QSystemTrayIcon.ActivationReason.DoubleClick else None)
@@ -183,6 +213,18 @@ class MainWindow(QMainWindow):
 
     def t(self, key):
         return translate(self.settings["language"], key)
+
+    def apply_theme(self):
+        theme = self.settings.get("theme", "system")
+        dark = theme == "dark" or (theme == "system" and QApplication.styleHints().colorScheme() == Qt.ColorScheme.Dark)
+        css = STYLE
+        if dark:
+            for old, new in [("#f5f7fb", "#10141d"), ("#24334b", "#e5eaf4"),
+                ("background: white", "background: #191f2b"), ("background: #fff;", "background: #242c3b;"),
+                ("#e5eaf2", "#30394a"), ("#dce3ee", "#354155"), ("#f9faff", "#202838"),
+                ("#738098", "#a4b1c7"), ("#e5ebff", "#29345b"), ("#eef2ff", "#303c59")]:
+                css = css.replace(old, new)
+        QApplication.instance().setStyleSheet(css)
 
     def label(self, text, name=None):
         widget = QLabel(text)
@@ -294,10 +336,22 @@ class MainWindow(QMainWindow):
         form.addWidget(QLabel(self.t("seconds")), 2, 0)
         form.addWidget(self.delay_spin, 2, 1)
         self.fps_spin = QSpinBox()
-        self.fps_spin.setRange(5, 30)
+        self.fps_spin.setRange(5, 120)
         self.fps_spin.setValue(self.settings["fps"])
         form.addWidget(QLabel(self.t("fps")), 3, 0)
         form.addWidget(self.fps_spin, 3, 1)
+        self.theme_combo = QComboBox()
+        for value in ("system", "light", "dark"):
+            self.theme_combo.addItem(self.t(value), value)
+        self.theme_combo.setCurrentIndex(max(0, self.theme_combo.findData(self.settings.get("theme", "system"))))
+        form.addWidget(QLabel(self.t("theme")), 4, 0)
+        form.addWidget(self.theme_combo, 4, 1)
+        self.quality_combo = QComboBox()
+        for value in ("high", "lossless"):
+            self.quality_combo.addItem(self.t(value), value)
+        self.quality_combo.setCurrentIndex(max(0, self.quality_combo.findData(self.settings.get("quality", "high"))))
+        form.addWidget(QLabel(self.t("quality")), 5, 0)
+        form.addWidget(self.quality_combo, 5, 1)
         prefs.addLayout(form)
         border = QPushButton(self.t("border"))
         border.clicked.connect(self.choose_border)
@@ -366,6 +420,10 @@ class MainWindow(QMainWindow):
             self.fail(exc)
             return
         self.settings = candidate
+        self.settings["theme"] = self.theme_combo.currentData()
+        self.settings["quality"] = self.quality_combo.currentData()
+        save_settings(self.settings)
+        self.apply_theme()
         self.key_status = self.hotkeys.register(candidate["hotkeys"])
         self.build_ui()
         self.tabs.setCurrentIndex(1)
@@ -510,7 +568,7 @@ class MainWindow(QMainWindow):
         try:
             frame = capture(self.region)
             # Require two stable samples so scrolling animation is never stitched mid-frame.
-            if self.settle_frame is not None and np.mean(np.abs(frame.astype(np.int16)-self.settle_frame.astype(np.int16))) < 1.2:
+            if self.settle_frame is not None and np.mean(np.abs(frame[::6,::6].astype(np.int16)-self.settle_frame[::6,::6].astype(np.int16))) < 1.2:
                 status, amount = self.stitcher.append(frame)
                 text = self.t("scrolling") if status in ("added", "unchanged") else self.t("limit" if status == "limit" else "ambiguous")
                 self.bar.label.setText(f'{text} · {self.stitcher.height} px')
@@ -544,7 +602,7 @@ class MainWindow(QMainWindow):
             return
         self.mode = "record"
         self.record_started = time.monotonic()
-        self.recorder = Recorder(self.region, self.output_path(".mp4"), self.settings["fps"], self.mic_button.isChecked())
+        self.recorder = Recorder(self.region, self.output_path(".mp4"), self.settings["fps"], self.mic_button.isChecked(), self.settings.get("quality", "high"))
         self.recorder.completed.connect(self.recording_completed)
         self.start_button.setEnabled(False)
         self.region_button.setEnabled(False)
@@ -558,22 +616,41 @@ class MainWindow(QMainWindow):
         self.region = dict(left=x, top=y, width=w, height=h)
         self.mode = "record_ready"
         self.bar = SessionBar("00:00 · " + self.t("fullscreen"), self.stop_recording, self.cancel_session, self.t)
+        self.bar.setWindowFlags(Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+        self.bar.setObjectName("recordPanel")
+        self.bar.setStyleSheet("QWidget#recordPanel {background:#171d29; border:1px solid #354057; border-radius:12px;} QLabel {color:#eef3ff; font-size:13px;} QPushButton {background:#293346; border:0; border-radius:8px; padding:0;} QPushButton:hover {background:#3b4962;} QPushButton:checked {background:#526ef0;} QPushButton:disabled {background:#1d2533;}")
         for button in self.bar.findChildren(QPushButton):
             button.hide()
         row = self.bar.layout()
-        self.mic_button = QPushButton("🎤 " + self.t("microphone"))
+        row.setContentsMargins(12, 8, 12, 8)
+        row.setSpacing(6)
+        self.bar.label.setText("00:00")
+        self.bar.label.setFixedWidth(62)
+        self.bar.label.setWordWrap(False)
+        self.mic_button = QPushButton()
+        self.mic_button.setIcon(line_icon("mic"))
         self.mic_button.setCheckable(True)
         self.mic_button.setToolTip(self.t("mic_help"))
-        row.addWidget(self.mic_button)
-        self.region_button = QPushButton(self.t("region"))
+        self.region_button = QPushButton()
+        self.region_button.setIcon(line_icon("region"))
+        self.region_button.setToolTip(self.t("region"))
         self.region_button.clicked.connect(self.record_select_region)
         row.addWidget(self.region_button)
-        self.start_button = QPushButton(self.t("start"))
+        self.start_button = QPushButton()
+        self.start_button.setIcon(line_icon("start"))
+        self.start_button.setToolTip(self.t("start"))
         self.start_button.clicked.connect(self.start_recording)
         row.addWidget(self.start_button)
-        stop = QPushButton(self.t("stop"))
+        stop = QPushButton()
+        stop.setIcon(line_icon("stop"))
+        stop.setToolTip(self.t("stop"))
         stop.clicked.connect(self.stop_recording)
         row.addWidget(stop)
+        row.addWidget(self.mic_button)
+        for button in (self.region_button, self.start_button, stop, self.mic_button):
+            button.setFixedSize(36,36)
+            button.setAccessibleName(button.toolTip())
+        self.bar.setFixedSize(270, 54)
         self.bar.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.bar.customContextMenuRequested.connect(self.record_context_menu)
         self.record_clock = QTimer(self.bar)
@@ -614,7 +691,19 @@ class MainWindow(QMainWindow):
         if error:
             self.fail(RuntimeError(error))
         else:
-            self.notify(self.t("saved") + path)
+            try:
+                chosen, _ = QFileDialog.getSaveFileName(self, self.t("save"), path, "MP4 (*.mp4)")
+                if chosen:
+                    target = Path(chosen)
+                    if target.suffix.lower() != ".mp4":
+                        target = target.with_suffix(".mp4")
+                    if target.resolve() != Path(path).resolve():
+                        shutil.copy2(path, target)
+                        Path(path).unlink()
+                    path = str(target)
+                self.notify(self.t("saved") + path)
+            except Exception as exc:
+                self.fail(exc)
         if self.quitting:
             QApplication.quit()
 

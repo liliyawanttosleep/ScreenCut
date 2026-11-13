@@ -14,13 +14,13 @@ def settings_path():
 def load_settings(path=None):
     path = path or settings_path()
     default = dict(language="zh", folder=str(Path.home() / "Pictures" / "ScreenCut"),
-                   delay=3, fps=15, hotkeys=DEFAULT_KEYS.copy())
+                   delay=3, fps=60, theme="system", quality="high", hotkeys=DEFAULT_KEYS.copy())
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
-        for k in ("language", "folder", "border"):
+        for k in ("language", "folder", "border", "theme", "quality"):
             if isinstance(raw.get(k), str):
                 default[k] = raw[k]
-        for k, low, high in (("delay", 0, 60), ("fps", 5, 30)):
+        for k, low, high in (("delay", 0, 60), ("fps", 5, 120)):
             default[k] = max(low, min(high, int(raw.get(k, default[k]))))
         for k, value in raw.get("hotkeys", {}).items():
             if k in DEFAULT_KEYS and isinstance(value, str):
@@ -56,8 +56,10 @@ class Stitcher:
             return "unchanged", 0
         h, w = frame.shape[:2]
         margin = max(4, w // 12)
-        old = cv2.cvtColor(prev[:, margin:w-margin], cv2.COLOR_RGB2GRAY)
-        new = cv2.cvtColor(frame[:, margin:w-margin], cv2.COLOR_RGB2GRAY)
+        # Keep vertical pixel precision, sample horizontal columns to reduce matching cost.
+        stride = max(1, (w-2*margin)//280)
+        old = cv2.cvtColor(prev[:, margin:w-margin:stride], cv2.COLOR_RGB2GRAY)
+        new = cv2.cvtColor(frame[:, margin:w-margin:stride], cv2.COLOR_RGB2GRAY)
         # A band inside the new viewport must have occurred lower in the previous one.
         anchor, band = h // 10, max(24, h // 5)
         template = new[anchor:anchor+band]

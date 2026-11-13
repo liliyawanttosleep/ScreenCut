@@ -84,7 +84,10 @@ for offset in (150, 300, 450):
     assert result == "added", result
 assert stitch.height == round(1050*scale), stitch.height
 as_image(stitch.image()).save(str(out / "live-stitch.png"))
-recorder = Recorder(region, out / "recording-smoke.mp4", 10)
+region["width"] -= 1
+region["height"] -= 1
+expected_frame = capture(region)
+recorder = Recorder(region, out / "recording-smoke.mp4", 60, quality="lossless")
 errors = []
 recorder.completed.connect(lambda path, error: errors.append(error))
 recorder.start()
@@ -101,7 +104,8 @@ assert video.isOpened()
 frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 assert frames >= 15, frames
 ok, frame = video.read()
-assert ok and frame.shape[:2] == (region["height"]//2*2, region["width"]//2*2)
+assert ok and frame.shape[:2] == (region["height"], region["width"])
+np.testing.assert_array_equal(frame[:, :, ::-1], expected_frame)
 video.release()
 class SyntheticMicrophone:
     def __init__(self, **kwargs):
@@ -131,6 +135,8 @@ import imageio_ffmpeg
 probe = subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-i", str(out / "audio-smoke.mp4")], capture_output=True, text=True)
 assert "Audio: aac" in probe.stderr, probe.stderr
 window.open_record_panel()
+app.processEvents()
+window.bar.grab().save(str(out / "record-panel.png"))
 assert window.mode == "record_ready"
 assert not window.mic_button.isChecked()
 window.bar.hide()
@@ -138,6 +144,12 @@ window.dispatch("record")
 assert window.bar.isVisible() and window.mode == "record_ready"
 window.cancel_session()
 assert window.mode is None
+for theme in ("dark", "light", "system"):
+    window.settings["theme"] = theme
+    window.apply_theme()
+    window.tabs.setCurrentIndex(0)
+    app.processEvents()
+    window.grab().save(str(out / f"theme-{theme}.png"))
 window.hotkeys.clear()
 window.tray.hide()
-print(f"PASS: six-language UI renders, clipboard, PNG, live capture stitching, MP4 {frames} frames")
+print(f"PASS: themes, compact panel, clipboard, PNG, stitching, 60 FPS target MP4 {frames} frames; odd-size RGB lossless round-trip exact; AAC mux")

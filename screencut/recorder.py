@@ -12,11 +12,12 @@ from PySide6.QtCore import QThread, Signal
 class Recorder(QThread):
     completed = Signal(str, str)
 
-    def __init__(self, region, path, fps, microphone=False):
+    def __init__(self, region, path, fps, microphone=False, quality="high"):
         super().__init__()
         self.region, self.path, self.fps = region, str(path), fps
         self.stop_event = threading.Event()
         self.microphone = microphone
+        self.quality = quality
 
     def run(self):
         writer = None
@@ -31,11 +32,11 @@ class Recorder(QThread):
                     audio_file.write(data)
                 stream = sd.InputStream(samplerate=rate, channels=1, callback=audio_callback)
                 stream.start()
-            width = self.region["width"] // 2 * 2
-            height = self.region["height"] // 2 * 2
+            width = self.region["width"]
+            height = self.region["height"]
             writer = imageio_ffmpeg.write_frames(self.path, (width, height), fps=self.fps,
-                codec="libx264", pix_fmt_in="rgb24", pix_fmt_out="yuv420p", macro_block_size=1,
-                output_params=["-preset", "ultrafast", "-crf", "22", "-movflags", "+faststart"])
+                codec="libx264rgb", pix_fmt_in="rgb24", pix_fmt_out="bgr24", macro_block_size=1,
+                output_params=["-preset", "ultrafast", "-crf", "0" if self.quality == "lossless" else "16", "-movflags", "+faststart"])
             writer.send(None)
             started = time.perf_counter()
             count = 0
@@ -44,6 +45,11 @@ class Recorder(QThread):
                     frame = np.array(capture.grab(self.region))[:height, :width, :3][:, :, ::-1].copy()
                     writer.send(frame)
                     count += 1
+                    # Preserve wall-clock duration when capture cannot sustain requested FPS.
+                    due = int((time.perf_counter()-started)*self.fps)
+                    for _ in range(min(max(0, due-count), self.fps)):
+                        writer.send(frame)
+                        count += 1
                     self.stop_event.wait(max(0, started + count / self.fps - time.perf_counter()))
         except Exception as exc:
             error = str(exc)

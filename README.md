@@ -2,6 +2,8 @@
 
 A local-first Windows capture studio: screenshots, scrolling captures, delayed captures and MP4 recording in one quiet desktop app.
 
+新版：偏好设置支持浅色／深色／跟随系统，录屏目标帧率 5–120 FPS，高清或无损 RGB 4:4:4。无损模式文件较大；部分播放器对 RGB H.264 支持有限。停止录屏后弹出保存对话框，取消则保留默认目录中的录屏。紧凑工具条默认位于左上角，可右键隐藏，Alt+G 恢复。80ms 滚动采样仍需保留画面重叠与短暂停顿。
+
 **状态 / Status: v0.1.0 preview.** 已有可运行桌面程序，不是仅界面原型。滚动截图为手动滚动、自动拼接，暂不自动驱动网页滚动。
 
 ![ScreenCut capture studio](docs/preview.png)

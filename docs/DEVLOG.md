@@ -1,5 +1,15 @@
 # Development log
 
+## 2026-11-12 — Faster scroll sampling, themes and compact recording toolbar
+
+Changed scroll timer from 500ms to 80ms (target, not guaranteed end-to-end throughput); sampled stability comparisons and horizontal template columns reduce matching work without reducing vertical resolution. Reliability gates remain in place.
+
+Added persisted light/dark/system themes, tighter typography and window proportions. Replaced recording controls with a 270×54 dark frameless toolbar at top-left: timer, vector region/start/stop/microphone icons; context-menu hide and Alt+G restore retained. No emoji microphone artwork.
+
+Recording settings now allow 5–120 FPS (new-install default 60). RGB 4:4:4 high-quality and lossless H.264 modes preserve original pixel dimensions, including odd sizes. Slow capture repeats frames to better preserve duration; this does not create missing motion frames. Hardware encoder/HDR and sustained 120 FPS at full desktop resolution remain unverified. RGB H.264 playback compatibility is narrower than yuv420p.
+
+After encoding finishes, Save As opens at the configured folder. Cancelling keeps the existing recording in that folder; relocation failure retains the original. Tests: 9 core tests; theme/toolbar renders inspected; 60-FPS target smoke produced 128 frames over ~2.2 seconds, odd-dimension lossless decoded RGB matched captured pixels exactly; AAC mux passed. This fixture is not a full-screen performance benchmark.
+
 ## 2026-11-12 — Capture semantics and recording controls revision
 
 User clarified Alt+C clipboard-only, Alt+A a fresh selection followed by Save As initialized at the configured folder, Alt+F direct scrolling mode, and Alt+G a reusable recording panel. Implemented these semantics, live selection pixel dimensions, configurable blue-default border, recording panel start/stop, elapsed timer, context-menu hide and Alt+G restore. Full-screen is default; region selection is optional. Microphone is opt-in before recording; WAV capture is muxed into AAC MP4 after video finalization. System audio and mid-recording microphone toggling are not implemented.

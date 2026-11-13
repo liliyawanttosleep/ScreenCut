@@ -23,6 +23,12 @@ class CoreTests(unittest.TestCase):
         stitch = Stitcher(self.page[:600])
         self.assertEqual(stitch.append(self.page[:600]), ("unchanged", 0))
 
+    def test_wide_frame_sampling_keeps_exact_vertical_pixels(self):
+        wide = np.tile(self.page, (1, 4, 1))
+        stitch = Stitcher(wide[:900])
+        self.assertEqual(stitch.append(wide[137:1037]), ("added", 137))
+        np.testing.assert_array_equal(stitch.image(), wide[:1037])
+
     def test_jump_and_reverse_rejected(self):
         stitch = Stitcher(self.page[300:900])
         self.assertNotEqual(stitch.append(self.page[100:700])[0], "added")

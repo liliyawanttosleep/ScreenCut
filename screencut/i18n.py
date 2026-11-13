@@ -1,6 +1,13 @@
 LANGUAGES = {"zh": "简体中文", "en": "English", "fr": "Français", "es": "Español", "ko": "한국어", "ja": "日本語"}
 # Every user-facing message has all six translations. Columns follow LANGUAGES.
 ROWS = {
+"theme": ["外观主题", "Appearance", "Apparence", "Apariencia", "테마", "テーマ"],
+"system": ["跟随系统", "System", "Système", "Sistema", "시스템", "システム"],
+"light": ["浅色", "Light", "Clair", "Claro", "라이트", "ライト"],
+"dark": ["深色", "Dark", "Sombre", "Oscuro", "다크", "ダーク"],
+"quality": ["录屏画质", "Video quality", "Qualité vidéo", "Calidad de vídeo", "영상 품질", "録画品質"],
+"high": ["高清 · RGB 4:4:4", "High · RGB 4:4:4", "Haute · RGB 4:4:4", "Alta · RGB 4:4:4", "고화질 · RGB 4:4:4", "高画質 · RGB 4:4:4"],
+"lossless": ["无损 · 文件较大", "Lossless · larger files", "Sans perte · fichiers volumineux", "Sin pérdida · archivos grandes", "무손실 · 큰 파일", "ロスレス · 大容量"],
 "fullscreen": ["全屏", "Full screen", "Plein écran", "Pantalla completa", "전체 화면", "全画面"],
 "microphone": ["麦克风", "Microphone", "Microphone", "Micrófono", "마이크", "マイク"],
 "mic_help": ["选中开启麦克风；未选中静音，开始后不可更改", "Checked: microphone on. Unchecked: muted. Set before starting.", "Coché : micro actif. Réglez avant de démarrer.", "Marcado: micrófono activo. Configura antes de iniciar.", "선택하면 마이크 켜짐. 시작 전에 설정하세요.", "選択でマイクオン。開始前に設定してください。"],

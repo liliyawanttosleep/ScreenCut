@@ -2,6 +2,8 @@
 
 Version: **0.1.0 preview**, Windows desktop application.
 
+Newest revision: 80ms scroll sampling; compact 270×54 icon toolbar; light/dark/system theme; recording Save As after stop; 5–120 target FPS; RGB high-quality/lossless options preserving odd dimensions. New-install default 60 FPS; existing user FPS is retained. Pixel-exact lossless fixture and 60-FPS target smoke passed. See latest DEVLOG for limits.
+
 Latest revision: Alt+A now selects a fresh capture then opens Save As; configurable blue border and pixel dimensions added. Alt+G opens/restores a full-screen-or-region recording panel with timer, hide menu and opt-in microphone. Microphone setting is fixed during a recording; no system audio. Current-user autostart enabled; PixPin scheduled autostart disabled. See latest DEVLOG entry; earlier verification below describes the initial release.
 
 ## Implemented
