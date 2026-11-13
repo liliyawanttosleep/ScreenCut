@@ -12,7 +12,7 @@ from PySide6.QtGui import QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap,
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPushButton,
     QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QTabWidget, QComboBox, QSpinBox,
     QKeySequenceEdit, QFileDialog, QLineEdit, QSystemTrayIcon, QMenu, QMessageBox,
-    QScrollArea)
+    QScrollArea, QColorDialog)
 from .core import load_settings, save_settings, Stitcher, settings_path
 from .i18n import LANGUAGES, translate
 from .native import Hotkeys, modifiers_down, paste, user32, monitor_rect
@@ -68,9 +68,10 @@ class Selector(QWidget):
     selected = Signal(object)
     cancelled = Signal()
 
-    def __init__(self, screen, text):
+    def __init__(self, screen, text, border="#3985ff"):
         super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
         self.screen_ref = screen
+        self.border = QColor(border)
         self.setWindowTitle("ScreenCut — Capture")
         self.background = screen.grabWindow(0)
         self.text = text
@@ -89,8 +90,14 @@ class Selector(QWidget):
             p.setClipRect(rect)
             p.drawPixmap(self.rect(), self.background)
             p.restore()
-            p.setPen(QPen(QColor("#8ca0ff"), 2))
+            p.setPen(QPen(self.border, 2))
             p.drawRect(rect)
+            ratio = self.screen_ref.devicePixelRatio()
+            size_text = f"{round(rect.width()*ratio)} × {round(rect.height()*ratio)} px"
+            tag = QRect(rect.left(), max(55, rect.top()-34), 210, 30)
+            p.fillRect(tag, QColor(20, 30, 48, 230))
+            p.setPen(QColor("white"))
+            p.drawText(tag, Qt.AlignmentFlag.AlignCenter, size_text)
         p.setPen(QColor("white"))
         p.setFont(QFont("Segoe UI", 13))
         p.drawText(self.rect().adjusted(28, 28, -28, -28), Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter, self.text)
@@ -292,6 +299,9 @@ class MainWindow(QMainWindow):
         form.addWidget(QLabel(self.t("fps")), 3, 0)
         form.addWidget(self.fps_spin, 3, 1)
         prefs.addLayout(form)
+        border = QPushButton(self.t("border"))
+        border.clicked.connect(self.choose_border)
+        prefs.addWidget(border)
         apply = QPushButton(self.t("apply"))
         apply.setObjectName("primary")
         apply.clicked.connect(self.apply_settings)
@@ -337,6 +347,12 @@ class MainWindow(QMainWindow):
         if folder:
             self.folder.setText(folder)
 
+    def choose_border(self):
+        color = QColorDialog.getColor(QColor(self.settings.get("border", "#3985ff")), self)
+        if color.isValid():
+            self.settings["border"] = color.name()
+            save_settings(self.settings)
+
     def apply_settings(self):
         candidate = dict(self.settings, language=self.languages.currentData(),
             folder=self.folder.text().strip(), delay=self.delay_spin.value(), fps=self.fps_spin.value(),
@@ -367,6 +383,13 @@ class MainWindow(QMainWindow):
 
     def dispatch(self, action):
         try:
+            if action == "record":
+                if self.mode in ("record", "record_ready", "finalizing"):
+                    self.bar.show()
+                    self.bar.raise_()
+                elif self.mode is None:
+                    self.open_record_panel()
+                return
             if action == "paste":
                 if self.mode is None:
                     self.paste_target = user32.GetForegroundWindow()
@@ -379,10 +402,6 @@ class MainWindow(QMainWindow):
                 elif action == "record" and self.mode == "record":
                     self.stop_recording()
                 return
-            if action == "save":
-                if self.latest is not None:
-                    self.save_latest()
-                    return
             self.mode = "selecting"
             self.pending_action = action
             self.hide()
@@ -427,7 +446,7 @@ class MainWindow(QMainWindow):
         if self.mode != "selecting":
             return
         try:
-            self.selectors = [Selector(screen, self.t("select")) for screen in QApplication.screens()]
+            self.selectors = [Selector(screen, self.t("select"), self.settings.get("border", "#3985ff")) for screen in QApplication.screens()]
             for overlay in self.selectors:
                 overlay.selected.connect(self.region_selected)
                 overlay.cancelled.connect(self.cancel_session)
@@ -460,7 +479,8 @@ class MainWindow(QMainWindow):
             return
         try:
             if self.pending_action == "record":
-                self.start_recording()
+                self.mode = "record_ready"
+                self.bar.show()
             elif self.pending_action == "scroll":
                 self.mode = "scroll"
                 self.stitcher = Stitcher(capture(self.region))
@@ -520,20 +540,67 @@ class MainWindow(QMainWindow):
         return folder / ("ScreenCut_" + datetime.now().strftime("%Y%m%d_%H%M%S_%f") + suffix)
 
     def start_recording(self):
+        if self.mode != "record_ready":
+            return
         self.mode = "record"
         self.record_started = time.monotonic()
-        self.recorder = Recorder(self.region, self.output_path(".mp4"), self.settings["fps"])
+        self.recorder = Recorder(self.region, self.output_path(".mp4"), self.settings["fps"], self.mic_button.isChecked())
         self.recorder.completed.connect(self.recording_completed)
-        self.bar = SessionBar("● " + self.t("record"), self.stop_recording, self.stop_recording, self.t)
-        buttons = self.bar.findChildren(QPushButton)
-        buttons[0].setText(self.t("stop"))
-        buttons[1].hide()
-        self.show_bar_outside_capture()
+        self.start_button.setEnabled(False)
+        self.region_button.setEnabled(False)
+        self.mic_button.setEnabled(False)
+        self.record_clock.start()
         self.recorder.start()
+
+    def open_record_panel(self):
+        screen = QApplication.primaryScreen()
+        x, y, w, h = monitor_rect(screen.name(), screen.geometry(), screen.devicePixelRatio())
+        self.region = dict(left=x, top=y, width=w, height=h)
+        self.mode = "record_ready"
+        self.bar = SessionBar("00:00 · " + self.t("fullscreen"), self.stop_recording, self.cancel_session, self.t)
+        for button in self.bar.findChildren(QPushButton):
+            button.hide()
+        row = self.bar.layout()
+        self.mic_button = QPushButton("🎤 " + self.t("microphone"))
+        self.mic_button.setCheckable(True)
+        self.mic_button.setToolTip(self.t("mic_help"))
+        row.addWidget(self.mic_button)
+        self.region_button = QPushButton(self.t("region"))
+        self.region_button.clicked.connect(self.record_select_region)
+        row.addWidget(self.region_button)
+        self.start_button = QPushButton(self.t("start"))
+        self.start_button.clicked.connect(self.start_recording)
+        row.addWidget(self.start_button)
+        stop = QPushButton(self.t("stop"))
+        stop.clicked.connect(self.stop_recording)
+        row.addWidget(stop)
+        self.bar.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.bar.customContextMenuRequested.connect(self.record_context_menu)
+        self.record_clock = QTimer(self.bar)
+        self.record_clock.setInterval(250)
+        self.record_clock.timeout.connect(self.update_record_clock)
+        self.hide()
+        self.show_bar_outside_capture()
+
+    def record_context_menu(self, point):
+        menu = QMenu(self.bar)
+        menu.addAction(self.t("hide"), self.bar.hide)
+        menu.exec(self.bar.mapToGlobal(point))
+
+    def update_record_clock(self):
+        elapsed = int(time.monotonic() - self.record_started)
+        self.bar.label.setText(f"● {elapsed//60:02d}:{elapsed%60:02d}")
+
+    def record_select_region(self):
+        self.bar.hide()
+        self.pending_action = "record"
+        self.mode = "selecting"
+        QTimer.singleShot(200, self.select_region)
 
     def stop_recording(self):
         if self.recorder and self.mode == "record":
             self.mode = "finalizing"
+            self.record_clock.stop()
             self.recorder.stop_event.set()
             if self.bar:
                 self.bar.label.setText(self.t("finalizing"))
@@ -592,6 +659,12 @@ class MainWindow(QMainWindow):
             return
         try:
             path = self.output_path(".png")
+            chosen, _ = QFileDialog.getSaveFileName(self, self.t("save"), str(path), "PNG (*.png)")
+            if not chosen:
+                return
+            path = Path(chosen)
+            if not path.suffix:
+                path = path.with_suffix(".png")
             if not self.latest.save(str(path), "PNG"):
                 raise OSError(str(path))
             self.notify(self.t("saved") + str(path))

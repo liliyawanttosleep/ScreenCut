@@ -1,5 +1,13 @@
 # Development log
 
+## 2026-11-12 — Capture semantics and recording controls revision
+
+User clarified Alt+C clipboard-only, Alt+A a fresh selection followed by Save As initialized at the configured folder, Alt+F direct scrolling mode, and Alt+G a reusable recording panel. Implemented these semantics, live selection pixel dimensions, configurable blue-default border, recording panel start/stop, elapsed timer, context-menu hide and Alt+G restore. Full-screen is default; region selection is optional. Microphone is opt-in before recording; WAV capture is muxed into AAC MP4 after video finalization. System audio and mid-recording microphone toggling are not implemented.
+
+Enabled current-user Run entry ScreenCut pointing to the installed D: EXE. Located PixPin startup in scheduled task `\PixPin\Autorun for Wentao` and verified it is Disabled. Did not terminate PixPin; existing hotkey conflicts can remain until PixPin exits.
+
+Validation includes existing core tests, source UI/selection smoke, silent MP4 decode and synthetic-microphone AAC mux verification. Synthetic audio verifies the pipeline, not physical microphone permissions/quality. No personal microphone audio is captured by these tests.
+
 ## 2026-11-12 — Initial implementation
 
 User requested a Windows screenshot product resembling the supplied PixPin hotkey settings reference, with configurable screenshot/copy/paste/save/scroll/record hotkeys, delayed capture, six languages, D: project storage, desktop shortcut and GitHub progress tracking.

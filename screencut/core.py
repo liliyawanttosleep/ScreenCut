@@ -17,7 +17,7 @@ def load_settings(path=None):
                    delay=3, fps=15, hotkeys=DEFAULT_KEYS.copy())
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
-        for k in ("language", "folder"):
+        for k in ("language", "folder", "border"):
             if isinstance(raw.get(k), str):
                 default[k] = raw[k]
         for k, low, high in (("delay", 0, 60), ("fps", 5, 30)):

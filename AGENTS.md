@@ -10,7 +10,8 @@
 ## Product contract
 
 - Windows native desktop app, clean light UI, six languages (zh/en/fr/es/ko/ja).
-- Preserve configurable default hotkeys: Alt+C copy capture; Alt+V paste; Alt+A save latest; Alt+F scrolling capture toggle; Alt+G recording toggle; Alt+D delayed capture.
+- Preserve configurable default hotkeys: Alt+C copy capture; Alt+V paste; Alt+A fresh selection then Save As; Alt+F scrolling capture toggle; Alt+G open/restore recording controls (never stops recording); Alt+D delayed capture.
+- Recording starts/stops from its panel; default full screen with optional region. Microphone is opt-in before recording. Preserve timer, hide context menu and restore shortcut. Default selection border is blue; show physical pixel dimensions.
 - Report global shortcut conflicts; never silently steal keys or terminate another program.
 - Capture only on explicit user action. Never upload screenshots or recordings. Keep personal output and settings out of Git.
 - Reject uncertain scroll matches rather than silently corrupting long images. Preserve cancel/finish controls and bounded memory use.

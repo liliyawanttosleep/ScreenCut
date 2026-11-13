@@ -3,3 +3,5 @@ mss==10.2.0
 numpy==2.5.4
 opencv-python==5.0.0.93
 imageio-ffmpeg==0.8.1
+sounddevice>=0.5,<1
+soundfile>=0.13,<1

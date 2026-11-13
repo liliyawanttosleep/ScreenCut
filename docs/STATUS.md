@@ -2,6 +2,8 @@
 
 Version: **0.1.0 preview**, Windows desktop application.
 
+Latest revision: Alt+A now selects a fresh capture then opens Save As; configurable blue border and pixel dimensions added. Alt+G opens/restores a full-screen-or-region recording panel with timer, hide menu and opt-in microphone. Microphone setting is fixed during a recording; no system audio. Current-user autostart enabled; PixPin scheduled autostart disabled. See latest DEVLOG entry; earlier verification below describes the initial release.
+
 ## Implemented
 
 - Light capture dashboard, image preview, preferences, system tray, single-instance guard.

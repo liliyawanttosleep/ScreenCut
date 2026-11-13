@@ -1,6 +1,13 @@
 LANGUAGES = {"zh": "简体中文", "en": "English", "fr": "Français", "es": "Español", "ko": "한국어", "ja": "日本語"}
 # Every user-facing message has all six translations. Columns follow LANGUAGES.
 ROWS = {
+"fullscreen": ["全屏", "Full screen", "Plein écran", "Pantalla completa", "전체 화면", "全画面"],
+"microphone": ["麦克风", "Microphone", "Microphone", "Micrófono", "마이크", "マイク"],
+"mic_help": ["选中开启麦克风；未选中静音，开始后不可更改", "Checked: microphone on. Unchecked: muted. Set before starting.", "Coché : micro actif. Réglez avant de démarrer.", "Marcado: micrófono activo. Configura antes de iniciar.", "선택하면 마이크 켜짐. 시작 전에 설정하세요.", "選択でマイクオン。開始前に設定してください。"],
+"region": ["选择区域", "Select region", "Choisir une zone", "Elegir región", "영역 선택", "範囲を選択"],
+"start": ["开始", "Start", "Démarrer", "Iniciar", "시작", "開始"],
+"hide": ["隐藏控制窗", "Hide controls", "Masquer", "Ocultar", "컨트롤 숨기기", "操作パネルを隠す"],
+"border": ["选区边框颜色", "Selection border color", "Couleur du cadre", "Color del borde", "선택 테두리 색상", "選択枠の色"],
 "studio": ["捕捉工作台", "Capture studio", "Studio de capture", "Estudio de captura", "캡처 스튜디오", "キャプチャスタジオ"],
 "subtitle": ["把灵感留在屏幕之外。", "Keep what matters.", "Gardez l’essentiel.", "Conserva lo importante.", "중요한 순간을 간직하세요.", "大切な瞬間を残す。"],
 "capture": ["开始捕捉", "Capture", "Capturer", "Capturar", "캡처", "キャプチャ"],
@@ -12,7 +19,7 @@ ROWS = {
 "record": ["录制屏幕", "Record screen", "Enregistrer l’écran", "Grabar pantalla", "화면 녹화", "画面録画"],
 "delay": ["延迟截图", "Delayed capture", "Capture différée", "Captura con retraso", "지연 캡처", "遅延撮影"],
 "scroll_desc": ["框选网页内容，缓慢向下滚动，再次按热键完成。", "Select content, scroll down slowly, press the hotkey again to finish.", "Sélectionnez le contenu, défilez lentement, puis répétez le raccourci.", "Selecciona contenido, desplázate despacio y repite el atajo para finalizar.", "영역 선택 후 천천히 아래로 스크롤하고 단축키를 다시 누르세요.", "範囲を選択してゆっくり下にスクロールし、もう一度ショートカットで終了。"],
-"record_desc": ["框选区域录制 MP4，再次按热键停止。当前版本不含音频。", "Select a region for MP4. Press again to stop. No audio in this version.", "Sélectionnez une zone MP4. Répétez pour arrêter. Sans audio.", "Selecciona una región para MP4. Repite para parar. Sin audio.", "영역을 선택하여 MP4로 녹화합니다. 다시 누르면 중지됩니다. 오디오는 제외됩니다.", "範囲を選択してMP4録画。もう一度押すと停止。音声は含みません。"],
+"record_desc": ["打开录屏控制窗，选择区域与麦克风，然后开始录制。", "Open controls, choose region and microphone, then start.", "Ouvrez les commandes, choisissez la zone et le micro, puis démarrez.", "Abre los controles, elige región y micrófono e inicia.", "컨트롤을 열고 영역과 마이크를 선택한 후 시작하세요.", "パネルで範囲とマイクを設定して開始します。"],
 "hotkeys": ["全局快捷键", "Global shortcuts", "Raccourcis globaux", "Atajos globales", "전역 단축키", "グローバルショートカット"],
 "hotkey_help": ["点击组合键后直接按键录入；清空可禁用。支持修饰键 + 字母、数字或 F 键。", "Click a shortcut and press keys. Clear to disable. Use modifiers + letters, digits or F keys.", "Cliquez puis appuyez sur les touches. Effacez pour désactiver. Modificateur + lettre, chiffre ou F.", "Haz clic y pulsa teclas. Borra para desactivar. Modificador + letra, número o tecla F.", "클릭 후 키를 누르세요. 비우면 비활성화됩니다. 보조 키 + 문자, 숫자 또는 F 키.", "クリックしてキーを入力。空欄で無効。修飾キー＋英数字またはFキー。"],
 "language": ["界面语言", "Language", "Langue", "Idioma", "언어", "言語"],
