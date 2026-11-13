@@ -1,5 +1,13 @@
 # Development log
 
+## 2026-11-12 — Independent system audio and microphone
+
+Root cause of missing playback audio: previous recorder only captured default microphone input. Added Windows WASAPI default-output loopback via PyAudioWPatch. Toolbar now has separate vector speaker and microphone toggles; speaker defaults on, microphone off. Choose enabled devices before Start. The ellipsis opens independent 0–200% recording gains, adjustable during capture. Gains do not modify OS playback volume. Turning either gain to zero mutes its recorded contribution; boosting microphone amplifies ambient noise as well as speech.
+
+System audio and microphone are recorded separately at native sample rates, mixed/resampled through FFmpeg, limited to avoid mix overload and padded to video duration. Silent loopback gaps receive timeline padding. Audio temporary files are retained on mux failure and removed only after success. System audio is all sound on the default output device, not per-application capture. Changing output devices mid-recording requires restarting the recording. Exclusive/protected audio may not be capturable.
+
+Validation: standard source smoke passed for silent video and synthetic microphone AAC. `scripts/smoke.py --loopback` passed on this machine: real default-output WASAPI captured a quiet 440Hz tone, mixed it with a synthetic 880Hz microphone signal at 50% gain each, then detected both frequencies in the decoded MP4. The first test attempt exposed an overly broad device mock; restricting it to input queries fixed the test isolation. Tests never opened the physical microphone. Do not treat synthetic microphone tests as hardware microphone permission/quality verification. Rebuilt standalone application and verified its main window is running/responding.
+
 ## 2026-11-12 — Faster scroll sampling, themes and compact recording toolbar
 
 Changed scroll timer from 500ms to 80ms (target, not guaranteed end-to-end throughput); sampled stability comparisons and horizontal template columns reduce matching work without reducing vertical resolution. Reliability gates remain in place.

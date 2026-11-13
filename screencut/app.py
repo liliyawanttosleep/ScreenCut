@@ -13,7 +13,7 @@ from PySide6.QtGui import QColor, QFont, QIcon, QImage, QPainter, QPen, QPixmap,
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPushButton,
     QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QTabWidget, QComboBox, QSpinBox,
     QKeySequenceEdit, QFileDialog, QLineEdit, QSystemTrayIcon, QMenu, QMessageBox,
-    QScrollArea, QColorDialog)
+    QScrollArea, QColorDialog, QSlider)
 from .core import load_settings, save_settings, Stitcher, settings_path
 from .i18n import LANGUAGES, translate
 from .native import Hotkeys, modifiers_down, paste, user32, monitor_rect
@@ -76,6 +76,15 @@ def line_icon(kind):
         p.drawArc(6, 7, 12, 12, 180*16, 180*16)
         p.drawLine(12, 19, 12, 22)
         p.drawLine(8, 22, 16, 22)
+    elif kind == "speaker":
+        p.drawLine(4, 9, 8, 9)
+        p.drawLine(4, 9, 4, 15)
+        p.drawLine(4, 15, 8, 15)
+        p.drawLine(8, 9, 13, 5)
+        p.drawLine(8, 15, 13, 19)
+        p.drawLine(13, 5, 13, 19)
+        p.drawArc(12, 6, 8, 12, -70*16, 140*16)
+        p.drawArc(13, 2, 10, 20, -60*16, 120*16)
     elif kind == "region":
         p.drawRect(4, 5, 16, 14)
         p.drawLine(12, 2, 12, 8)
@@ -602,11 +611,12 @@ class MainWindow(QMainWindow):
             return
         self.mode = "record"
         self.record_started = time.monotonic()
-        self.recorder = Recorder(self.region, self.output_path(".mp4"), self.settings["fps"], self.mic_button.isChecked(), self.settings.get("quality", "high"))
+        self.recorder = Recorder(self.region, self.output_path(".mp4"), self.settings["fps"], self.mic_button.isChecked(), self.settings.get("quality", "high"), self.speaker_button.isChecked(), self.mic_gain/100, self.system_gain/100)
         self.recorder.completed.connect(self.recording_completed)
         self.start_button.setEnabled(False)
         self.region_button.setEnabled(False)
         self.mic_button.setEnabled(False)
+        self.speaker_button.setEnabled(False)
         self.record_clock.start()
         self.recorder.start()
 
@@ -631,6 +641,13 @@ class MainWindow(QMainWindow):
         self.mic_button.setIcon(line_icon("mic"))
         self.mic_button.setCheckable(True)
         self.mic_button.setToolTip(self.t("mic_help"))
+        self.mic_gain = 100
+        self.system_gain = 100
+        self.speaker_button = QPushButton()
+        self.speaker_button.setIcon(line_icon("speaker"))
+        self.speaker_button.setCheckable(True)
+        self.speaker_button.setChecked(True)
+        self.speaker_button.setToolTip(self.t("system_audio"))
         self.region_button = QPushButton()
         self.region_button.setIcon(line_icon("region"))
         self.region_button.setToolTip(self.t("region"))
@@ -646,11 +663,16 @@ class MainWindow(QMainWindow):
         stop.setToolTip(self.t("stop"))
         stop.clicked.connect(self.stop_recording)
         row.addWidget(stop)
+        row.addWidget(self.speaker_button)
         row.addWidget(self.mic_button)
-        for button in (self.region_button, self.start_button, stop, self.mic_button):
+        volume = QPushButton("···")
+        volume.setToolTip(self.t("audio_levels"))
+        volume.clicked.connect(self.show_audio_levels)
+        row.addWidget(volume)
+        for button in (self.region_button, self.start_button, stop, self.speaker_button, self.mic_button, volume):
             button.setFixedSize(36,36)
             button.setAccessibleName(button.toolTip())
-        self.bar.setFixedSize(270, 54)
+        self.bar.setFixedSize(354, 54)
         self.bar.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.bar.customContextMenuRequested.connect(self.record_context_menu)
         self.record_clock = QTimer(self.bar)
@@ -663,6 +685,32 @@ class MainWindow(QMainWindow):
         menu = QMenu(self.bar)
         menu.addAction(self.t("hide"), self.bar.hide)
         menu.exec(self.bar.mapToGlobal(point))
+
+    def show_audio_levels(self):
+        popup = QWidget(self.bar, Qt.WindowType.Popup)
+        popup.setStyleSheet("QWidget {background:#202838; color:#eef3ff;} QSlider::groove:horizontal {height:4px;background:#506078;} QSlider::handle:horizontal {background:#92a8ff;width:14px;margin:-5px 0;border-radius:7px;}")
+        layout = QVBoxLayout(popup)
+        layout.setContentsMargins(16,16,16,16)
+        for key, caption in (("system_gain", "system_audio"), ("mic_gain", "microphone")):
+            label = QLabel(f"{self.t(caption)}  {getattr(self,key)}%")
+            layout.addWidget(label)
+            slider = QSlider(Qt.Orientation.Horizontal)
+            slider.setRange(0,200)
+            slider.setValue(getattr(self,key))
+            def change(value, k=key, text=self.t(caption), target=label):
+                setattr(self,k,value)
+                target.setText(f"{text}  {value}%")
+                if self.recorder:
+                    setattr(self.recorder, k, value/100)
+            slider.valueChanged.connect(change)
+            layout.addWidget(slider)
+        hint = QLabel(self.t("gain_help"))
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+        popup.setFixedWidth(290)
+        popup.move(self.bar.mapToGlobal(self.bar.rect().bottomLeft()))
+        self.audio_popup = popup
+        popup.show()
 
     def update_record_clock(self):
         elapsed = int(time.monotonic() - self.record_started)

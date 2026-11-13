@@ -2,6 +2,8 @@
 
 Version: **0.1.0 preview**, Windows desktop application.
 
+Audio revision: separate default-output WASAPI loopback and default microphone; separate enable buttons before start and live 0–200% recording gains in the toolbar ellipsis. System audio defaults on, microphone defaults off. Previous notes below about no system audio are historical. Capture is device-wide, not application-specific.
+
 Newest revision: 80ms scroll sampling; compact 270×54 icon toolbar; light/dark/system theme; recording Save As after stop; 5–120 target FPS; RGB high-quality/lossless options preserving odd dimensions. New-install default 60 FPS; existing user FPS is retained. Pixel-exact lossless fixture and 60-FPS target smoke passed. See latest DEVLOG for limits.
 
 Latest revision: Alt+A now selects a fresh capture then opens Save As; configurable blue border and pixel dimensions added. Alt+G opens/restores a full-screen-or-region recording panel with timer, hide menu and opt-in microphone. Microphone setting is fixed during a recording; no system audio. Current-user autostart enabled; PixPin scheduled autostart disabled. See latest DEVLOG entry; earlier verification below describes the initial release.

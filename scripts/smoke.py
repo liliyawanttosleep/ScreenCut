@@ -111,7 +111,8 @@ class SyntheticMicrophone:
     def __init__(self, **kwargs):
         self.callback = kwargs["callback"]
     def start(self):
-        self.callback(np.zeros((48000*2, 1), dtype=np.float32), 96000, None, None)
+        signal = (.04*np.sin(2*np.pi*880*np.arange(48000*2)/48000)).astype(np.float32).reshape(-1,1)
+        self.callback(signal, 96000, None, None)
     def stop(self):
         pass
     def close(self):
@@ -135,6 +136,42 @@ import imageio_ffmpeg
 probe = subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-i", str(out / "audio-smoke.mp4")], capture_output=True, text=True)
 assert "Audio: aac" in probe.stderr, probe.stderr
 window.open_record_panel()
+if "--loopback" in sys.argv:
+    import sounddevice as sd
+    rate = int(sd.query_devices(kind="output")["default_samplerate"])
+    tone = (.06*np.sin(2*np.pi*440*np.arange(rate*2)/rate)).astype(np.float32)
+    loop_errors = []
+    mic_patch = patch("screencut.recorder.sd.InputStream", SyntheticMicrophone)
+    original_query = sd.query_devices
+    rate_patch = patch("screencut.recorder.sd.query_devices", side_effect=lambda *a, **kw: {"default_samplerate":48000} if kw.get("kind")=="input" else original_query(*a, **kw))
+    mic_patch.start()
+    rate_patch.start()
+    loop_recorder = Recorder(region, out / "loopback-smoke.mp4", 15, microphone=True, system_audio=True, mic_gain=.5, system_gain=.5)
+    loop_recorder.completed.connect(lambda path,error: loop_errors.append(error))
+    loop_recorder.start()
+    settle()
+    sd.play(tone, rate)
+    until = time.monotonic()+2.3
+    while time.monotonic()<until:
+        app.processEvents()
+        time.sleep(.02)
+    sd.stop()
+    loop_recorder.stop_event.set()
+    assert loop_recorder.wait(15000)
+    mic_patch.stop()
+    rate_patch.stop()
+    app.processEvents()
+    assert loop_errors == [""], loop_errors
+    decoded = subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-i", str(out/"loopback-smoke.mp4"), "-vn", "-ac", "1", "-ar", "48000", "-f", "f32le", "pipe:1"], capture_output=True, check=True)
+    samples = np.frombuffer(decoded.stdout, dtype=np.float32)
+    spectrum = np.abs(np.fft.rfft(samples))
+    frequencies = np.fft.rfftfreq(len(samples), 1/48000)
+    band = (frequencies>437)&(frequencies<443)
+    peak = frequencies[band][spectrum[band].argmax()]
+    assert spectrum[band].max() > 5
+    assert spectrum[(frequencies>877)&(frequencies<883)].max() > 5
+    assert np.sqrt(np.mean(samples*samples)) > .001
+    print(f"PASS: actual WASAPI loopback + synthetic microphone -> mixed MP4; both 440Hz and 880Hz present at 50% gain")
 app.processEvents()
 window.bar.grab().save(str(out / "record-panel.png"))
 assert window.mode == "record_ready"

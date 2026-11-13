@@ -1,6 +1,9 @@
 LANGUAGES = {"zh": "简体中文", "en": "English", "fr": "Français", "es": "Español", "ko": "한국어", "ja": "日本語"}
 # Every user-facing message has all six translations. Columns follow LANGUAGES.
 ROWS = {
+"system_audio": ["系统声音（默认播放设备）", "System audio (default output)", "Son système (sortie par défaut)", "Audio del sistema (salida predeterminada)", "시스템 오디오 (기본 출력)", "システム音声（既定の出力）"],
+"audio_levels": ["调节录制音量", "Recording levels", "Niveaux d’enregistrement", "Niveles de grabación", "녹음 음량", "録音音量"],
+"gain_help": ["0% 静音 · 100% 原音量 · 200% 放大。仅影响录制，不改变播放音量。", "0% mute · 100% original · 200% boost. Recording only.", "0% muet · 100% original · 200% amplifié. Enregistrement uniquement.", "0% silencio · 100% original · 200% amplificado. Solo grabación.", "0% 음소거 · 100% 원음 · 200% 증폭. 녹음에만 적용됩니다.", "0%ミュート · 100%元の音量 · 200%増幅。録音のみに適用。"],
 "theme": ["外观主题", "Appearance", "Apparence", "Apariencia", "테마", "テーマ"],
 "system": ["跟随系统", "System", "Système", "Sistema", "시스템", "システム"],
 "light": ["浅色", "Light", "Clair", "Claro", "라이트", "ライト"],
